@@ -3,10 +3,14 @@
 Code to accompany our 2018 IEEE International Conference on Systems, Man, and Cybernetics (SMC) paper entitled -
 [On the classification of SSVEP-based dry-EEG signals via convolutional neural networks](https://arxiv.org/pdf/1805.04157.pdf).
 
-The code is structured as follows:
-
-
 ## Dependencies and Requirements
+The code has been designed to support python 3.6+ only. The project has the following dependencies and version requirements:
+
+- torch=1.1.0+
+- numpy=1.16++
+- python=3.6.5+
+- scipy=1.1.0+
+- scikit-learn=0.23+
 
 ## Cite
 
