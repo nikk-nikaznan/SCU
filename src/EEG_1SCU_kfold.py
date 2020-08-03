@@ -3,7 +3,7 @@ import torch.nn as nn
 
 import numpy as np
 from sklearn.model_selection import StratifiedShuffleSplit
-
+from pathlib import Path
 import argparse
 
 parser = argparse.ArgumentParser()
@@ -26,8 +26,9 @@ torch.cuda.manual_seed(opt.seed_n)
 num_classes = 4
 
 # data loading
-EEGdata = np.load("/home/nikkhadijah/Data/Data_S01_4class.npy")
-EEGlabel = np.load("/home/nikkhadijah/Data/Data_S01_4class_labels.npy")
+
+EEGdata = np.load('{Path.home()}/Data/Data_S01_4class.npy')
+EEGlabel = np.load('{Path.home()}/Data/Data_S01_4class_labels.npy')
 EEGdata = EEGdata.swapaxes(1, 2)
 
 class CNN(nn.Module):
