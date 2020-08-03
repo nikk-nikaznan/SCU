@@ -7,6 +7,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
+from pathlib import Path
 import argparse
 
 
@@ -32,8 +33,8 @@ torch.cuda.manual_seed(opt.seed_n)
 num_classes = 4
 
 # data loading
-EEGdata = np.load("/home/nikkhadijah/Data/Data_S01_4class.npy")
-EEGlabel = np.load("/home/nikkhadijah/Data/Data_S01_4class_labels.npy")
+EEGdata = np.load('{Path.home()}/Data/Data_S01_4class.npy')
+EEGlabel = np.load('{Path.home()}/Data/Data_S01_4class_labels.npy')
 EEGdata = EEGdata.swapaxes(1, 2)
 
 class CNN(nn.Module):
