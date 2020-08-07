@@ -2,11 +2,7 @@ import torch
 import torch.nn as nn
 
 import numpy as np
-import random
-import matplotlib
-import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import confusion_matrix
 import argparse
 
 from SCU import CNN
@@ -18,7 +14,7 @@ parser.add_argument('--lr', type=float, default=0.00001, help='adam: learning ra
 parser.add_argument('--dropout_level', type=float, default=0.5, help='dropout level')
 parser.add_argument('--w_decay', type=float, default=0.001, help='weight decay')
 parser.add_argument('--batch_size', type=int, default=10, help='batch size')
-parser.add_argument('--seed_n', type=int, default=10, help='seed number')
+parser.add_argument('--seed_n', type=int, default=74, help='seed number')
 opt = parser.parse_args()
 
 device  = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -26,36 +22,10 @@ device  = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = True
 
-random.seed(opt.seed_n)
-np.random.seed(opt.seed_n)
 torch.manual_seed(opt.seed_n)
 torch.cuda.manual_seed(opt.seed_n)
 
 num_classes = 4
-
-def plot_error_matrix(cm, classes, cmap=plt.cm.Blues):
-   """ Plot the error matrix for the neural network models """
-
-   from sklearn.metrics import confusion_matrix
-   import itertools
-
-   plt.imshow(cm, interpolation='nearest', cmap=cmap)
-   #plt.colorbar()
-   tick_marks = np.arange(len(classes))
-   plt.xticks(tick_marks, classes, rotation=45)
-   plt.yticks(tick_marks, classes)
-
-   print(cm)
-
-   thresh = cm.max() / 2.
-   for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-       plt.text(j, i, cm[i, j],
-                horizontalalignment="center",
-                color="white" if cm[i, j] > thresh else "black")
-
-   plt.ylabel('True label')
-   plt.xlabel('Predicted label')
-   plt.tight_layout()
 
 def train_SCU(X_train, y_train):
 
@@ -111,8 +81,6 @@ def test_SCU(cnn, X_test, y_test):
 
     cnn.eval()
     test_cumulative_accuracy = 0
-    label_list = []
-    prediction_list = []
     for i, data in enumerate(testloader, 0):
         # format the data from the dataloader
         test_inputs, test_labels = data
@@ -125,35 +93,7 @@ def test_SCU(cnn, X_test, y_test):
         test_acc = get_accuracy(test_labels,test_predicted)
         test_cumulative_accuracy += test_acc
 
-        label_list.append(test_labels.cpu().data.numpy())
-        prediction_list.append(test_predicted.cpu().data.numpy())
-
-    label_list = np.array(label_list)
-    cnf_labels = np.concatenate(label_list)
-    prediction_list = np.array(prediction_list)
-    cnf_predictions = np.concatenate(prediction_list)
-
-    return test_cumulative_accuracy, len(testloader), cnf_labels, cnf_predictions
-    
-def CCM(cnf_labels, cnf_predictions):
-
-    class_names = ["10", "12", "15", "30"] 
-    # Compute confusion matrix
-    cnf_matrix = confusion_matrix(cnf_labels, cnf_predictions)
-    np.set_printoptions(precision=2)
-
-    # Normalise
-    cnf_matrix = cnf_matrix.astype('float') / cnf_matrix.sum(axis=1)[:, np.newaxis]
-    cnf_matrix = cnf_matrix.round(4)
-    matplotlib.rcParams.update({'font.size': 16})
-
-    # Plot normalized confusion matrix
-    plt.figure()
-    plot_error_matrix(cnf_matrix, classes=class_names)
-    plt.tight_layout()
-    filename = "S01_SCU.pdf"
-    plt.savefig(filename, format='PDF', bbox_inches='tight')
-    plt.show()
+    return test_cumulative_accuracy, len(testloader)
 
 if __name__ == "__main__":
 
@@ -169,9 +109,6 @@ if __name__ == "__main__":
     cnn = train_SCU(X_train, y_train)
 
     # testing
-    test_cumulative_accuracy, ntest, cnf_labels, cnf_predictions = test_SCU(cnn, X_test, y_test)
+    test_cumulative_accuracy, ntest = test_SCU(cnn, X_test, y_test)
 
     print("Test Accuracy: %2.1f" % ((test_cumulative_accuracy/ntest*100)))
-
-    # compute and plot confusion matrix
-    CCM(cnf_labels, cnf_predictions)
