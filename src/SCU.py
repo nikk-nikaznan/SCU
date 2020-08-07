@@ -1,9 +1,12 @@
 import torch
 import torch.nn as nn
 
-class CNN(nn.Module):
+class SCU(nn.Module):
+
     def __init__(self, opt, num_classes):
-        super(CNN, self).__init__()
+
+        super().__init__()
+
         self.layer1 = nn.Sequential(
             nn.Conv1d(in_channels=9, out_channels=16, kernel_size=5, stride=2),
             nn.BatchNorm1d(num_features=16),

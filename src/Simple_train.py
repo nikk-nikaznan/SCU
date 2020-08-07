@@ -5,7 +5,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 import argparse
 
-from SCU import CNN
+from SCU import SCU
 from utils import get_accuracy
 
 parser = argparse.ArgumentParser()
@@ -37,7 +37,7 @@ def train_SCU(X_train, y_train):
     trainset = torch.utils.data.TensorDataset(train_input, train_label)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, shuffle=True, num_workers=4)
     
-    cnn = CNN(opt, num_classes).to(device)
+    cnn = SCU(opt, num_classes).to(device)
     cnn.train()
     # Loss and Optimizer
     ce_loss = nn.CrossEntropyLoss()
@@ -46,7 +46,7 @@ def train_SCU(X_train, y_train):
     # loop through the required number of epochs
     for epoch in range(opt.n_epochs):
 
-        # loop through the batches yo!!!
+        # loop through the batches
         cumulative_accuracy = 0
         for i, data in enumerate(trainloader, 0):
             # format the data from the dataloader
@@ -111,4 +111,4 @@ if __name__ == "__main__":
     # testing
     test_cumulative_accuracy, ntest = test_SCU(cnn, X_test, y_test)
 
-    print("Test Accuracy: %2.1f" % ((test_cumulative_accuracy/ntest*100)))
+    print(f"Test Accuracy: {test_cumulative_accuracy/ntest*100}")

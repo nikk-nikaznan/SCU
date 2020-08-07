@@ -1,7 +1,12 @@
-## SCU
+# SCU
 
 Code to accompany our 2018 IEEE International Conference on Systems, Man, and Cybernetics (SMC) paper entitled -
 [On the classification of SSVEP-based dry-EEG signals via convolutional neural networks](https://arxiv.org/pdf/1805.04157.pdf).
+
+
+## Usage
+
+A working example demonstrating how to train a model can be found in the `Simple_train.py` file, which can be directly run with the included sample data in this repo. The base SCU model is included in the `SCU.py` file, and can be used to directly import the model into other codebases. 
 
 ## Dependencies and Requirements
 The code has been designed to support python 3.6+ only. The project has the following dependencies and version requirements:
