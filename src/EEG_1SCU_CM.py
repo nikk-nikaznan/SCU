@@ -2,62 +2,28 @@ import torch
 import torch.nn as nn
 
 import numpy as np
+import yaml
 import random
-import matplotlib
-import matplotlib.pyplot as plt
+
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import confusion_matrix
-import argparse
 
-from SCU import SCU
-from utils import get_accuracy
+from model import SCU
+from utils import get_accuracy, CCM
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--n_epochs', type=int, default=50, help='number of epochs of training')
-parser.add_argument('--lr', type=float, default=0.00001, help='adam: learning rate')
-parser.add_argument('--dropout_level', type=float, default=0.5, help='dropout level')
-parser.add_argument('--w_decay', type=float, default=0.001, help='weight decay')
-parser.add_argument('--batch_size', type=int, default=10, help='batch size')
-parser.add_argument('--seed_n', type=int, default=10, help='seed number')
-opt = parser.parse_args()
 
 device  = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = True
 
-random.seed(opt.seed_n)
-np.random.seed(opt.seed_n)
-torch.manual_seed(opt.seed_n)
-torch.cuda.manual_seed(opt.seed_n)
+# Setting seeds for reproducibility
+seed_n = 74
+random.seed(seed_n)
+np.random.seed(seed_n)
+torch.manual_seed(seed_n)
+torch.cuda.manual_seed(seed_n)
 
-num_classes = 4
-
-def plot_error_matrix(cm, classes, cmap=plt.cm.Blues):
-   """ Plot the error matrix for the neural network models """
-
-   from sklearn.metrics import confusion_matrix
-   import itertools
-
-   plt.imshow(cm, interpolation='nearest', cmap=cmap)
-   #plt.colorbar()
-   tick_marks = np.arange(len(classes))
-   plt.xticks(tick_marks, classes, rotation=45)
-   plt.yticks(tick_marks, classes)
-
-   print(cm)
-
-   thresh = cm.max() / 2.
-   for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-       plt.text(j, i, cm[i, j],
-                horizontalalignment="center",
-                color="white" if cm[i, j] > thresh else "black")
-
-   plt.ylabel('True label')
-   plt.xlabel('Predicted label')
-   plt.tight_layout()
-
-def train_SCU(X_train, y_train):
+def train_SCU(X_train, y_train, config):
 
     # convert NumPy Array to Torch Tensor
     train_input = torch.from_numpy(X_train)
@@ -65,16 +31,16 @@ def train_SCU(X_train, y_train):
 
     # create the data loader for the training set
     trainset = torch.utils.data.TensorDataset(train_input, train_label)
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, shuffle=True, num_workers=4)
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=config["batch_size"], shuffle=True, num_workers=4)
     
-    cnn = SCU(opt, num_classes).to(device)
+    cnn = SCU(config).to(device)
     cnn.train()
     # Loss and Optimizer
     ce_loss = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(cnn.parameters(), lr=opt.lr, weight_decay=opt.w_decay)
+    optimizer = torch.optim.Adam(cnn.parameters(), lr=config['learning_rate'], weight_decay=config["wdecay"])
 
     # loop through the required number of epochs
-    for epoch in range(opt.n_epochs):
+    for epoch in range(config["num_epochs"]):
 
         # loop through batches
         cumulative_accuracy = 0
@@ -107,7 +73,7 @@ def test_SCU(cnn, X_test, y_test):
 
     # create the data loader for the test set
     testset = torch.utils.data.TensorDataset(test_input, test_label)
-    testloader = torch.utils.data.DataLoader(testset, batch_size=opt.batch_size, shuffle=False, num_workers=4)
+    testloader = torch.utils.data.DataLoader(testset, batch_size=1, shuffle=False, num_workers=4)
 
     cnn.eval()
     test_cumulative_accuracy = 0
@@ -134,39 +100,23 @@ def test_SCU(cnn, X_test, y_test):
     cnf_predictions = np.concatenate(prediction_list)
 
     return test_cumulative_accuracy, len(testloader), cnf_labels, cnf_predictions
-    
-def CCM(cnf_labels, cnf_predictions):
-
-    class_names = ["10", "12", "15", "30"] 
-    # Compute confusion matrix
-    cnf_matrix = confusion_matrix(cnf_labels, cnf_predictions)
-    np.set_printoptions(precision=2)
-
-    # Normalise
-    cnf_matrix = cnf_matrix.astype('float') / cnf_matrix.sum(axis=1)[:, np.newaxis]
-    cnf_matrix = cnf_matrix.round(4)
-    matplotlib.rcParams.update({'font.size': 16})
-
-    # Plot normalized confusion matrix
-    plt.figure()
-    plot_error_matrix(cnf_matrix, classes=class_names)
-    plt.tight_layout()
-    filename = "S01_SCU.pdf"
-    plt.savefig(filename, format='PDF', bbox_inches='tight')
-    plt.show()
 
 if __name__ == "__main__":
 
+    # config loading
+    with open("config/scu.yaml", "r") as f:
+        config = yaml.safe_load(f)
+
     # data loading
-    EEGdata = np.load('SampleData_S01_4class.npy')
-    EEGlabel = np.load('SampleData_S01_4class_labels.npy')
+    EEGdata = np.load('data/SampleData_S01_4class.npy')
+    EEGlabel = np.load('data/SampleData_S01_4class_labels.npy')
     EEGdata = EEGdata.swapaxes(1, 2)
     
     # split the data  training and testing
-    X_train, X_test, y_train, y_test = train_test_split(EEGdata, EEGlabel, test_size=0.2)
+    X_train, X_test, y_train, y_test = train_test_split(EEGdata, EEGlabel, test_size=0.2, stratify=EEGlabel)
 
     # training
-    cnn = train_SCU(X_train, y_train)
+    cnn = train_SCU(X_train, y_train, config)
 
     # testing
     test_cumulative_accuracy, ntest, cnf_labels, cnf_predictions = test_SCU(cnn, X_test, y_test)
