@@ -58,8 +58,9 @@ class SCU_Model(pl.LightningModule):
         self.config = config
         self.model = SCU(self.config)
         self.criterion = nn.CrossEntropyLoss()
-        self.train_acc = Accuracy(task='MULTICLASS')
-        self.val_acc = Accuracy(task='MULTICLASS')
+        print(self.config)
+        self.train_acc = Accuracy(num_classes=config['num_class'], task='multiclass')
+        self.val_acc = Accuracy(num_classes=config['num_class'], task='multiclass')
 
     def forward(self, x):
         return self.model(x)
@@ -110,7 +111,14 @@ def main(args):
     datamodule = SCU_DataModule(input_data, input_label)
     model = SCU_Model(config)
 
-    trainer = pl.Trainer(max_epochs=config["num_epochs"], gpus=1 if torch.cuda.is_available() else 0)
+    trainer = pl.Trainer(max_epochs=config["num_epochs"])
+
+    # Check if CUDA is available and specify the number of GPUs if it is
+    if torch.cuda.is_available():
+        trainer.gpus = 1
+    else:
+        trainer.gpus = None
+
     trainer.fit(model, datamodule=datamodule)
 
 
