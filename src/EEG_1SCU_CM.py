@@ -15,7 +15,8 @@ from sklearn.model_selection import train_test_split
 
 from model import SCU, weights_init
 from utils import get_accuracy, CCM, load_data, load_label
-
+import logging
+logging.basicConfig(level=logging.INFO)
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -29,9 +30,8 @@ np.random.seed(seed_n)
 torch.manual_seed(seed_n)
 torch.cuda.manual_seed(seed_n)
 
-
 class SCU_DataModule(pl.LightningDataModule):
-    def __init__(self, input_data, input_label, batch_size=32):
+    def __init__(self, input_data, input_label, batch_size):
         super().__init__()
         self.input_data = input_data
         self.input_label = input_label
@@ -40,7 +40,7 @@ class SCU_DataModule(pl.LightningDataModule):
     def setup(self, stage=None):
         # Split data into train and test sets
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
-            self.input_data, self.input_label, test_size=0.2, stratify=self.input_label
+            self.input_data, self.input_label, test_size=0.1, stratify=self.input_label
         )
 
     def train_dataloader(self):
@@ -51,25 +51,26 @@ class SCU_DataModule(pl.LightningDataModule):
         test_dataset = TensorDataset(torch.Tensor(self.X_test), torch.Tensor(self.y_test))
         return DataLoader(test_dataset, batch_size=self.batch_size)
 
-
 class SCU_Model(pl.LightningModule):
     def __init__(self, config):
         super().__init__()
         self.config = config
         self.model = SCU(self.config)
         self.criterion = nn.CrossEntropyLoss()
-        print(self.config)
         self.train_acc = Accuracy(num_classes=config['num_class'], task='multiclass')
         self.val_acc = Accuracy(num_classes=config['num_class'], task='multiclass')
 
     def forward(self, x):
         return self.model(x)
 
-    def training_step(self, batch, batch_idx):
+    def training_step(self, batch):
         x, y = batch
         y_hat = self.model(x)
         loss = self.criterion(y_hat, y.long())
+        print(loss)
         self.log('train_loss', loss)
+        Acc_train = self.train_acc(torch.argmax(y_hat, dim=1), y.long())
+        print(Acc_train)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -78,28 +79,12 @@ class SCU_Model(pl.LightningModule):
         self.val_acc(torch.argmax(y_hat, dim=1), y.long())
         return y_hat, y
 
-    def validation_epoch_end(self, outputs):
-        self.log('val_acc', self.val_acc.compute())
-
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=self.config["learning_rate"])
         return optimizer
 
-    # def data_prep(self) -> None:
-    #     # split the data training and testing
-    #     self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
-    #         self.input_data, self.input_label, test_size=0.2, stratify=self.input_label
-    #     )
-
-    #     self._load_model()
-    #     self._build_training_objects()
-    #     # training
-    #     self._train_SCU()
-    #     # testing
-    #     test_cumulative_accuracy, ntest, cnf_labels, cnf_predictions = self._test_SCU()
-    #     print("Test Accuracy: %2.1f" % ((test_cumulative_accuracy / ntest * 100)))
-    #     # compute and plot confusion matrix
-    #     CCM(cnf_labels, cnf_predictions)
+    def on_validation_epoch_end(self):
+        self.log('val_acc', self.val_acc.compute())
 
 def main(args):
     config_file = args.config_file
@@ -108,16 +93,16 @@ def main(args):
     input_data = load_data()
     input_label = load_label()
 
-    datamodule = SCU_DataModule(input_data, input_label)
+    datamodule = SCU_DataModule(input_data, input_label, config["batch_size"])
     model = SCU_Model(config)
 
-    trainer = pl.Trainer(max_epochs=config["num_epochs"])
+    trainer = pl.Trainer(max_epochs=config["num_epochs"], logger=True)
 
     # Check if CUDA is available and specify the number of GPUs if it is
-    if torch.cuda.is_available():
-        trainer.gpus = 1
-    else:
-        trainer.gpus = None
+    # if torch.cuda.is_available():
+    #     trainer.gpus = 1
+    # else:
+    trainer.gpus = None
 
     trainer.fit(model, datamodule=datamodule)
 
