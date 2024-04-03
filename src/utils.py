@@ -9,22 +9,13 @@ def load_data() -> np.ndarray:
     # data loading
     EEGdata = np.load("data/SampleData_S01_4class.npy")
     input_data = EEGdata.swapaxes(1, 2)
-
     return input_data
 
 
 def load_label() -> np.ndarray:
     # data loading
     input_label = np.load("data/SampleData_S01_4class_labels.npy")
-
     return input_label
-
-
-def get_accuracy(actual, predicted):
-    # actual: cuda longtensor variable
-    # predicted: cuda longtensor variable
-    assert actual.size(0) == predicted.size(0)
-    return float(actual.eq(predicted).sum()) / actual.size(0)
 
 
 def plot_error_matrix(cm, classes, cmap=plt.cm.Blues):

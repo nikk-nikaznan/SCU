@@ -21,7 +21,7 @@ class SCU_DataModule(pl.LightningDataModule):
         dataset = TensorDataset(input_data_tensor, input_label_tensor)
 
         # Define the sizes of train and test sets
-        train_size = int(0.9 * len(dataset))
+        train_size = int(0.8 * len(dataset))
         test_size = len(dataset) - train_size
 
         # Use random_split to split the dataset into train and test sets
