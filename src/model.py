@@ -58,6 +58,7 @@ class SCU(nn.Module):
         self.classifier = nn.Linear(
             self.config["num_class_units"], self.config["num_class"]
         )
+        self.apply(weights_init)
 
     def forward(self, x: torch.FloatTensor) -> torch.FloatTensor:
         """The forward function to compute a pass through the subject classification model.
@@ -69,6 +70,7 @@ class SCU(nn.Module):
         """
 
         out = self.conv_layers(x)
+
         out = out.view(out.size(0), -1)
         out = self.classifier(out)
 

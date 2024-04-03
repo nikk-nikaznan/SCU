@@ -1,4 +1,4 @@
-num_epochs: 50
+num_epochs: 10
 learning_rate: 0.00001
 dropout_level: 0.5
 wdecay: 0.001
