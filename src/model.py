@@ -10,6 +10,12 @@ activation_resolver = ClassResolver(
 
 
 def weights_init(m: nn.Module) -> None:
+    """
+    Initialize weights for the given module.
+
+    Args:
+        m (nn.Module): Module for which weights are initialized.
+    """
     if isinstance(m, nn.Conv1d):
         torch.nn.init.xavier_uniform_(m.weight)
         if m.bias is not None:
@@ -18,6 +24,12 @@ def weights_init(m: nn.Module) -> None:
 
 class SCU(nn.Module):
     def __init__(self, config: dict) -> None:
+        """
+        Initialize the SCU model.
+
+        Args:
+            config (dict): Configuration dictionary containing model parameters.
+        """
         super().__init__()
         self.config = config
 
@@ -30,7 +42,7 @@ class SCU(nn.Module):
             == len(self.config["layers"]["strides"])
         ), "Please ensure the correct number of each parameter have been set"
 
-        # Iterate over the lists and build the conv layers
+        # Iterate over the lists and build the convolutional layers
         layers: list = []
         for in_features, out_features, kernel_size, stride in zip(
             self.config["layers"]["in_channels"],
@@ -55,23 +67,25 @@ class SCU(nn.Module):
             )
         self.conv_layers = nn.Sequential(*layers)
 
+        # Classifier layer
         self.classifier = nn.Linear(
             self.config["num_class_units"], self.config["num_class"]
         )
+
+        # Initialize weights
         self.apply(weights_init)
 
     def forward(self, x: torch.FloatTensor) -> torch.FloatTensor:
-        """The forward function to compute a pass through the subject classification model.
+        """
+        Forward pass of the SCU model.
 
         Args:
-            x (torch.FloatTensor): The raw input EEG data to be passed through the model.
+            x (torch.FloatTensor): Input EEG data to be passed through the model.
+
         Returns:
             torch.FloatTensor: Subject class predictions for the input dataset.
         """
-
         out = self.conv_layers(x)
-
         out = out.view(out.size(0), -1)
         out = self.classifier(out)
-
         return out

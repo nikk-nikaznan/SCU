@@ -87,9 +87,7 @@ class SCU_Model(pl.LightningModule):
         self.log("train_loss", loss, prog_bar=True)
         return loss
 
-    def test_step(
-        self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int
-    ):
+    def test_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
         """
         Defines the test step logic.
 
@@ -101,8 +99,9 @@ class SCU_Model(pl.LightningModule):
         y_hat = self.model(x)
         test_loss = self.criterion(y_hat, y.long())
         test_acc = self.test_acc(torch.argmax(y_hat, dim=1), y.long())
-        self.test_step_outputs.append({'test_loss': test_loss, 'test_acc': test_acc, 'y': y, 'y_hat': y_hat})
-        return {'test_loss': test_loss, 'y': y, 'y_hat': y_hat}
+        self.test_step_outputs.append(
+            {"test_loss": test_loss, "test_acc": test_acc, "y": y, "y_hat": y_hat}
+        )
 
     def on_test_epoch_end(self) -> None:
         """
@@ -115,8 +114,12 @@ class SCU_Model(pl.LightningModule):
         self.log("test_acc", mean_acc, on_epoch=True)
 
         #  Extract true labels and predicted labels for CCM function
-        cnf_labels = np.concatenate([x["y"].cpu().numpy() for x in self.test_step_outputs])
-        cnf_raw_scores = np.concatenate([x["y_hat"].cpu().numpy() for x in self.test_step_outputs])
+        cnf_labels = np.concatenate(
+            [x["y"].cpu().numpy() for x in self.test_step_outputs]
+        )
+        cnf_raw_scores = np.concatenate(
+            [x["y_hat"].cpu().numpy() for x in self.test_step_outputs]
+        )
 
         # Apply softmax to raw scores to obtain probabilities
         cnf_probs = torch.softmax(torch.tensor(cnf_raw_scores), dim=1)
@@ -126,7 +129,6 @@ class SCU_Model(pl.LightningModule):
 
         # Call your CCM function to plot the confusion matrix
         CCM(cnf_labels, cnf_predictions)
-
 
     def configure_optimizers(self) -> optim.Optimizer:
         """
