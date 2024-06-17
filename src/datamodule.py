@@ -37,8 +37,8 @@ class SCU_DataModule(pl.LightningDataModule):
         """
         generator = torch.Generator().manual_seed(self.seed_n)
         # Convert your input data and labels to PyTorch tensors
-        input_data_tensor = torch.tensor(self.input_data, dtype=torch.float64)
-        input_label_tensor = torch.tensor(self.input_label, dtype=torch.float64)
+        input_data_tensor = torch.tensor(self.input_data, dtype=torch.float32)
+        input_label_tensor = torch.tensor(self.input_label, dtype=torch.float32)
 
         # Combine data and labels into a TensorDataset
         dataset = TensorDataset(input_data_tensor, input_label_tensor)

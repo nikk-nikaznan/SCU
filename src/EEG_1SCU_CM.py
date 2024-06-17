@@ -26,7 +26,7 @@ class SCU_Model(pl.LightningModule):
         config (Dict[str, Any]): A dictionary containing configuration parameters for the SCU model.
         model (SCU): An instance of the SCU model architecture.
         criterion (nn.Module): The loss function used for training the model.
-        train_loss: Loss metric for training data.
+        test_acc (Accuracy): Accuracy metric for testing data.
         test_step_outputs (List[Dict[str, torch.Tensor]]): A list to store test step outputs,
             including test loss and accuracy.
 
@@ -34,7 +34,7 @@ class SCU_Model(pl.LightningModule):
         forward(x: torch.Tensor) -> torch.Tensor: Performs forward pass through the model.
         training_step(batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> torch.Tensor:
             Defines the training step logic.
-        test_step(batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> None:
+        test_step(batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:
             Defines the test step logic.
         on_test_epoch_end() -> None:
             Calculates and logs test loss and accuracy at the end of each testing epoch.
@@ -51,7 +51,7 @@ class SCU_Model(pl.LightningModule):
         """
         super().__init__()
         self.config = config
-        self.model = SCU(self.config).double()
+        self.model = SCU(self.config).float()
         self.criterion = nn.CrossEntropyLoss()
         self.test_acc = Accuracy(num_classes=config["num_class"], task="multiclass")
         self.test_step_outputs = []
@@ -87,48 +87,54 @@ class SCU_Model(pl.LightningModule):
         self.log("train_loss", loss, prog_bar=True)
         return loss
 
-    def test_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
+    def test_step(
+        self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int
+    ) -> Dict[str, torch.Tensor]:
         """
         Defines the test step logic.
 
         Args:
             batch (Tuple[torch.Tensor, torch.Tensor]): A tuple containing input data and corresponding labels.
             batch_idx (int): Index of the batch.
+
+        Returns:
+            Dict[str, torch.Tensor]: Dictionary containing test loss, test accuracy, and other outputs.
         """
         x, y = batch
         y_hat = self.model(x)
         test_loss = self.criterion(y_hat, y.long())
         test_acc = self.test_acc(torch.argmax(y_hat, dim=1), y.long())
+        self.log("test_loss", test_loss, prog_bar=True, on_epoch=True)
+        self.log("test_acc", test_acc, prog_bar=True, on_epoch=True)
         self.test_step_outputs.append(
             {"test_loss": test_loss, "test_acc": test_acc, "y": y, "y_hat": y_hat}
         )
+        return {"test_loss": test_loss, "test_acc": test_acc, "y": y, "y_hat": y_hat}
 
     def on_test_epoch_end(self) -> None:
         """
         Calculates and logs test loss and accuracy at the end of each testing epoch.
         """
-        test_loss = torch.stack([x["test_loss"] for x in self.test_step_outputs]).mean()
-        self.log("test_loss", test_loss, on_epoch=True)
+        if self.test_step_outputs:
+            # Extract true labels and predicted labels for CCM function
+            cnf_labels = np.concatenate(
+                [x["y"].cpu().numpy() for x in self.test_step_outputs]
+            )
+            cnf_raw_scores = np.concatenate(
+                [x["y_hat"].cpu().numpy() for x in self.test_step_outputs]
+            )
 
-        mean_acc = torch.tensor([x["test_acc"] for x in self.test_step_outputs]).mean()
-        self.log("test_acc", mean_acc, on_epoch=True)
+            # Apply softmax to raw scores to obtain probabilities
+            cnf_probs = torch.softmax(torch.tensor(cnf_raw_scores), dim=1)
 
-        #  Extract true labels and predicted labels for CCM function
-        cnf_labels = np.concatenate(
-            [x["y"].cpu().numpy() for x in self.test_step_outputs]
-        )
-        cnf_raw_scores = np.concatenate(
-            [x["y_hat"].cpu().numpy() for x in self.test_step_outputs]
-        )
+            # Get predicted labels by selecting the class with the highest probability
+            cnf_predictions = np.argmax(cnf_probs, axis=1)
 
-        # Apply softmax to raw scores to obtain probabilities
-        cnf_probs = torch.softmax(torch.tensor(cnf_raw_scores), dim=1)
+            # Call your CCM function to plot the confusion matrix
+            CCM(cnf_labels, cnf_predictions)
 
-        # Get predicted labels by selecting the class with the highest probability
-        cnf_predictions = np.argmax(cnf_probs, axis=1)
-
-        # Call your CCM function to plot the confusion matrix
-        CCM(cnf_labels, cnf_predictions)
+        # Clear the test step outputs after each epoch
+        self.test_step_outputs.clear()
 
     def configure_optimizers(self) -> optim.Optimizer:
         """
@@ -157,7 +163,7 @@ def main(args):
         max_epochs=config["num_epochs"],
         logger=True,
         log_every_n_steps=1,
-        accelerator="cpu",
+        accelerator=args.accelerator,
     )
 
     trainer.fit(model, datamodule=datamodule)
@@ -177,6 +183,12 @@ if __name__ == "__main__":
         type=int,
         default=74,
         help="seeds for reproducibility",
+    )
+    parser.add_argument(
+        "--accelerator",
+        type=str,
+        default="cpu",
+        help="Accelerator to train lightning. By default CPU, (other option : GPU)",
     )
     args = parser.parse_args()
     main(args)
