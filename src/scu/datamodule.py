@@ -1,7 +1,8 @@
+from typing import Union
+
+import lightning as pl
 import torch
 from torch.utils.data import DataLoader, TensorDataset, random_split
-import lightning as pl
-from typing import Union, Tuple
 
 
 class SCU_DataModule(pl.LightningDataModule):
@@ -48,9 +49,7 @@ class SCU_DataModule(pl.LightningDataModule):
         test_size = len(dataset) - train_size
 
         # Use random_split to split the dataset into train and test sets
-        self.train_dataset, self.test_dataset = random_split(
-            dataset, [train_size, test_size], generator=generator
-        )
+        self.train_dataset, self.test_dataset = random_split(dataset, [train_size, test_size], generator=generator)
 
     def train_dataloader(self) -> DataLoader:
         """

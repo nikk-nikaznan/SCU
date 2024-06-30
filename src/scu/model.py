@@ -68,9 +68,7 @@ class SCU(nn.Module):
         self.conv_layers = nn.Sequential(*layers)
 
         # Classifier layer
-        self.classifier = nn.Linear(
-            self.config["num_class_units"], self.config["num_class"]
-        )
+        self.classifier = nn.Linear(self.config["num_class_units"], self.config["num_class"])
 
         # Initialize weights
         self.apply(weights_init)

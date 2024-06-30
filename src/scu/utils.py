@@ -1,9 +1,10 @@
-import numpy as np
-from sklearn.metrics import confusion_matrix
-import matplotlib
-import matplotlib.pyplot as plt
 import itertools
 from typing import List
+
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.metrics import confusion_matrix
 
 
 def load_data() -> np.ndarray:
@@ -31,9 +32,7 @@ def load_label() -> np.ndarray:
     return input_label
 
 
-def plot_error_matrix(
-    cm: np.ndarray, classes: List[str], cmap: plt.cm.Blues = plt.cm.Blues
-) -> None:
+def plot_error_matrix(cm: np.ndarray, classes: List[str], cmap: plt.cm.Blues = plt.cm.Blues) -> None:
     """
     Plot the error matrix for the neural network models.
 
