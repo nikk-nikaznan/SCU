@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "scu"
+authors = [
+    {name = "Nik Khadijah Nik Aznan"}
+]
+description = "Code to accompany our 2018 IEEE International Conference on Systems, Man, and Cybernetics (SMC) paper entitled - On the classification of SSVEP-based dry-EEG signals via convolutional neural networks."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {file = "LICENSE"}
+version = "0.1.0"
+dependencies = [
+    "torch",
+    "lightning",
+    "numpy",
+    "scikit-learn",
+    "matplotlib",
+    "mlflow",
+    "class_resolver",
+]
+
+[project.urls]
+repository = "https://github.com/nikk-nikaznan/SCU"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+exclude = ["tests"]
+namespaces = true
+
+[tool.black]
+line-length = 120
+target-version = ["py310", "py311"]
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 120
+include_trailing_comma = true
+reverse_relative = true
