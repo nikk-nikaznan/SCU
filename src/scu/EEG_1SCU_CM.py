@@ -1,18 +1,17 @@
-from typing import Dict, List, Any, Tuple
-import numpy as np
+import argparse
+from typing import Any, Dict, Tuple
 
+import lightning as pl
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import lightning as pl
+import yaml
 from torchmetrics import Accuracy
 
-import yaml
-import argparse
-
-from model import SCU
-from utils import CCM, load_data, load_label
-from datamodule import SCU_DataModule
+from scu.datamodule import SCU_DataModule
+from scu.model import SCU
+from scu.utils import CCM, load_data, load_label
 
 
 class SCU_Model(pl.LightningModule):
@@ -68,9 +67,7 @@ class SCU_Model(pl.LightningModule):
         """
         return self.model(x)
 
-    def training_step(
-        self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int
-    ) -> torch.Tensor:
+    def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> torch.Tensor:
         """
         Defines the training step logic.
 
@@ -87,9 +84,7 @@ class SCU_Model(pl.LightningModule):
         self.log("train_loss", loss, prog_bar=True)
         return loss
 
-    def test_step(
-        self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int
-    ) -> Dict[str, torch.Tensor]:
+    def test_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:
         """
         Defines the test step logic.
 
@@ -106,9 +101,7 @@ class SCU_Model(pl.LightningModule):
         test_acc = self.test_acc(torch.argmax(y_hat, dim=1), y.long())
         self.log("test_loss", test_loss, prog_bar=True, on_epoch=True)
         self.log("test_acc", test_acc, prog_bar=True, on_epoch=True)
-        self.test_step_outputs.append(
-            {"test_loss": test_loss, "test_acc": test_acc, "y": y, "y_hat": y_hat}
-        )
+        self.test_step_outputs.append({"test_loss": test_loss, "test_acc": test_acc, "y": y, "y_hat": y_hat})
         return {"test_loss": test_loss, "test_acc": test_acc, "y": y, "y_hat": y_hat}
 
     def on_test_epoch_end(self) -> None:
@@ -117,12 +110,8 @@ class SCU_Model(pl.LightningModule):
         """
         if self.test_step_outputs:
             # Extract true labels and predicted labels for CCM function
-            cnf_labels = np.concatenate(
-                [x["y"].cpu().numpy() for x in self.test_step_outputs]
-            )
-            cnf_raw_scores = np.concatenate(
-                [x["y_hat"].cpu().numpy() for x in self.test_step_outputs]
-            )
+            cnf_labels = np.concatenate([x["y"].cpu().numpy() for x in self.test_step_outputs])
+            cnf_raw_scores = np.concatenate([x["y_hat"].cpu().numpy() for x in self.test_step_outputs])
 
             # Apply softmax to raw scores to obtain probabilities
             cnf_probs = torch.softmax(torch.tensor(cnf_raw_scores), dim=1)
@@ -154,9 +143,7 @@ def main(args):
     input_data = load_data()
     input_label = load_label()
 
-    datamodule = SCU_DataModule(
-        input_data, input_label, config["batch_size"], args.seed_n
-    )
+    datamodule = SCU_DataModule(input_data, input_label, config["batch_size"], args.seed_n)
     model = SCU_Model(config)
 
     trainer = pl.Trainer(
