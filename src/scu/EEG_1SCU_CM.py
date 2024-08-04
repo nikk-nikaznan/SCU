@@ -1,3 +1,5 @@
+"""Code to run the training and test of SCU model."""
+
 import argparse
 from typing import Any, Dict, Tuple
 
@@ -9,12 +11,12 @@ import torch.optim as optim
 import yaml
 from torchmetrics import Accuracy
 
-from scu.datamodule import SCU_DataModule
+from scu.datamodule import SCUDataModule
 from scu.model import SCU
-from scu.utils import CCM, load_data, load_label
+from scu.utils import compute_confusion_matrix, load_data, load_label
 
 
-class SCU_Model(pl.LightningModule):
+class SCUmodel(pl.LightningModule):
     """
     LightningModule for training and evaluating the SCU (Subject Classification Unit) model.
 
@@ -43,7 +45,7 @@ class SCU_Model(pl.LightningModule):
 
     def __init__(self, config: Dict[str, Any]) -> None:
         """
-        Initializes the SCU_Model with the provided configuration.
+        Initialize the SCU_Model with the provided configuration.
 
         Args:
             config (Dict[str, Any]): A dictionary containing configuration parameters for the SCU model.
@@ -57,7 +59,7 @@ class SCU_Model(pl.LightningModule):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
-        Performs a forward pass through the SCU model.
+        Perform a forward pass through the SCU model.
 
         Args:
             x (torch.Tensor): Input data tensor.
@@ -69,7 +71,7 @@ class SCU_Model(pl.LightningModule):
 
     def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> torch.Tensor:
         """
-        Defines the training step logic.
+        Define the training step logic.
 
         Args:
             batch (Tuple[torch.Tensor, torch.Tensor]): A tuple containing input data and corresponding labels.
@@ -86,7 +88,7 @@ class SCU_Model(pl.LightningModule):
 
     def test_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:
         """
-        Defines the test step logic.
+        Define the test step logic.
 
         Args:
             batch (Tuple[torch.Tensor, torch.Tensor]): A tuple containing input data and corresponding labels.
@@ -105,9 +107,7 @@ class SCU_Model(pl.LightningModule):
         return {"test_loss": test_loss, "test_acc": test_acc, "y": y, "y_hat": y_hat}
 
     def on_test_epoch_end(self) -> None:
-        """
-        Calculates and logs test loss and accuracy at the end of each testing epoch.
-        """
+        """Calculate and logs test loss and accuracy at the end of each testing epoch."""
         if self.test_step_outputs:
             # Extract true labels and predicted labels for CCM function
             cnf_labels = np.concatenate([x["y"].cpu().numpy() for x in self.test_step_outputs])
@@ -120,14 +120,14 @@ class SCU_Model(pl.LightningModule):
             cnf_predictions = np.argmax(cnf_probs, axis=1)
 
             # Call your CCM function to plot the confusion matrix
-            CCM(cnf_labels, cnf_predictions)
+            compute_confusion_matrix(cnf_labels, cnf_predictions)
 
         # Clear the test step outputs after each epoch
         self.test_step_outputs.clear()
 
     def configure_optimizers(self) -> optim.Optimizer:
         """
-        Configures the optimizer used for training the model.
+        Configure the optimizer used for training the model.
 
         Returns:
             torch.optim.Optimizer: The optimizer instance.
@@ -137,14 +137,28 @@ class SCU_Model(pl.LightningModule):
 
 
 def main(args):
+    """
+    Execute the main training and testing loop for the SCU model.
+
+    This function loads the configuration, data, and labels, initializes the data module and model,
+    and then uses a PyTorch Lightning Trainer to fit and test the model.
+
+    Args:
+        args (argparse.Namespace): Command-line arguments containing configuration and runtime parameters.
+
+            args.config_file (str): Path to the configuration YAML file.
+            args.seed_n (int): Seed number for reproducibility.
+            args.accelerator (str): Type of accelerator to use (e.g., 'cpu', 'gpu').
+
+    """
     config_file = args.config_file
     config = yaml.safe_load(open(config_file))
 
     input_data = load_data()
     input_label = load_label()
 
-    datamodule = SCU_DataModule(input_data, input_label, config["batch_size"], args.seed_n)
-    model = SCU_Model(config)
+    datamodule = SCUDataModule(input_data, input_label, config["batch_size"], args.seed_n)
+    model = SCUmodel(config)
 
     trainer = pl.Trainer(
         max_epochs=config["num_epochs"],
