@@ -7,7 +7,7 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 
 
-def load_data() -> np.ndarray:
+def load_data(eeg_data) -> np.ndarray:
     """
     Load EEG data from file.
 
@@ -15,12 +15,12 @@ def load_data() -> np.ndarray:
         np.ndarray: EEG data.
     """
     # data loading
-    eeg_data = np.load("data/SampleData_S01_4class.npy")
+    eeg_data = np.load(eeg_data)
     input_data = eeg_data.swapaxes(1, 2)
     return input_data
 
 
-def load_label() -> np.ndarray:
+def load_label(eeg_label) -> np.ndarray:
     """
     Load labels from file.
 
@@ -28,7 +28,7 @@ def load_label() -> np.ndarray:
         np.ndarray: Label data.
     """
     # data loading
-    input_label = np.load("data/SampleData_S01_4class_labels.npy")
+    input_label = np.load(eeg_label)
     return input_label
 
 

@@ -6,16 +6,28 @@ Code to accompany our 2018 IEEE International Conference on Systems, Man, and Cy
 
 ## Usage
 
-A working example demonstrating how to train a model can be found in the `Simple_train.py` file, which can be directly run with the included sample data in this repo. The base SCU model is included in the `SCU.py` file, and can be used to directly import the model into other codebases. 
+To run the code using the sample data, run
+```
+python src/scu/EEG_1SCU_CM.py
+```
+SCU model is included in the `model.py`, and can be used to directly import the model into other codebases. 
 
-## Dependencies and Requirements
-The code has been designed to support python 3.6+ only. The project has the following dependencies and version requirements:
+## Requirements
+To install the dependencies using `conda`, run
 
-- torch=1.1.0+
-- numpy=1.16++
-- python=3.6.5+
-- scipy=1.1.0+
-- scikit-learn=0.23+
+```
+  conda create -n scu -c conda-forge python=3.10
+  conda activate scu
+  pip install -e ".[dev]"
+```
+
+Alternatively, to install the dependencies using `pyenv`, run
+
+```
+  ~/.pyenv/versions/3.10.12/bin/python -m venv ~/Venvs/scu
+  source ~/Venvs/scu/bin/activate
+  pip install -e ".[dev]"
+```
 
 ## Cite
 

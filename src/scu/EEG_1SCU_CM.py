@@ -154,8 +154,8 @@ def main(args):
     config_file = args.config_file
     config = yaml.safe_load(open(config_file))
 
-    input_data = load_data()
-    input_label = load_label()
+    input_data = load_data(args.eeg_data)
+    input_label = load_label(args.eeg_label)
 
     datamodule = SCUDataModule(input_data, input_label, config["batch_size"], args.seed_n)
     model = SCUmodel(config)
@@ -190,6 +190,18 @@ if __name__ == "__main__":
         type=str,
         default="cpu",
         help="Accelerator to train lightning. By default CPU, (other option : GPU)",
+    )
+    parser.add_argument(
+        "--eeg_data",
+        type=str,
+        default="data/SampleData_S01_4class.npy",
+        help="Path to the EEG data numpy file",
+    )
+    parser.add_argument(
+        "--eeg_label",
+        type=str,
+        default="data/SampleData_S01_4class_labels.npy",
+        help="Path to the EEG labels numpy file",
     )
     args = parser.parse_args()
     main(args)

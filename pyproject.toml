@@ -20,6 +20,7 @@ dependencies = [
     "matplotlib",
     "mlflow",
     "class_resolver",
+    "tox",
 ]
 
 [project.urls]
