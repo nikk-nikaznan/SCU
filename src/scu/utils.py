@@ -7,7 +7,7 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 
 
-def load_data() -> np.ndarray:
+def load_data(eeg_data) -> np.ndarray:
     """
     Load EEG data from file.
 
@@ -15,12 +15,12 @@ def load_data() -> np.ndarray:
         np.ndarray: EEG data.
     """
     # data loading
-    EEGdata = np.load("data/SampleData_S01_4class.npy")
-    input_data = EEGdata.swapaxes(1, 2)
+    eeg_data = np.load(eeg_data)
+    input_data = eeg_data.swapaxes(1, 2)
     return input_data
 
 
-def load_label() -> np.ndarray:
+def load_label(eeg_label) -> np.ndarray:
     """
     Load labels from file.
 
@@ -28,7 +28,7 @@ def load_label() -> np.ndarray:
         np.ndarray: Label data.
     """
     # data loading
-    input_label = np.load("data/SampleData_S01_4class_labels.npy")
+    input_label = np.load(eeg_label)
     return input_label
 
 
@@ -67,7 +67,7 @@ def plot_error_matrix(cm: np.ndarray, classes: List[str], cmap: plt.cm.Blues = p
     plt.tight_layout()
 
 
-def CCM(cnf_labels: np.ndarray, cnf_predictions: np.ndarray) -> None:
+def compute_confusion_matrix(cnf_labels: np.ndarray, cnf_predictions: np.ndarray) -> None:
     """
     Generate and plot the confusion matrix.
 
@@ -95,3 +95,10 @@ def CCM(cnf_labels: np.ndarray, cnf_predictions: np.ndarray) -> None:
     filename = "S01_SCU.pdf"
     plt.savefig(filename, format="PDF", bbox_inches="tight")
     # plt.show()
+
+
+def get_accuracy(actual, predicted):
+    # actual: cuda longtensor variable
+    # predicted: cuda longtensor variable
+    assert actual.size(0) == predicted.size(0)
+    return float(actual.eq(predicted).sum()) / actual.size(0)

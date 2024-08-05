@@ -1,3 +1,5 @@
+"""Contain class of data module."""
+
 from typing import Union
 
 import lightning as pl
@@ -5,7 +7,7 @@ import torch
 from torch.utils.data import DataLoader, TensorDataset, random_split
 
 
-class SCU_DataModule(pl.LightningDataModule):
+class SCUDataModule(pl.LightningDataModule):
     def __init__(
         self,
         input_data: Union[list, torch.Tensor],
@@ -30,7 +32,7 @@ class SCU_DataModule(pl.LightningDataModule):
 
     def setup(self, stage: str = None) -> None:
         """
-        Setup datasets for training and testing.
+        Setup dataset for training and testing.
 
         Args:
             stage (str, optional): Stage of setup (train, test).
@@ -53,7 +55,7 @@ class SCU_DataModule(pl.LightningDataModule):
 
     def train_dataloader(self) -> DataLoader:
         """
-        Returns a DataLoader for the training set.
+        Return a DataLoader for the training set.
 
         Returns:
             DataLoader: DataLoader for the training set.
